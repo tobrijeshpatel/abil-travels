@@ -652,6 +652,10 @@ html, body {
     <button class="icon-btn" id="btn-sum" title="Summary">📊</button>
     <span class="fab-label">Summary</span>
   </div>
+  <div class="fab-wrap">
+    <button class="icon-btn" id="btn-backup" title="Backup & Restore">💾</button>
+    <span class="fab-label">Backup</span>
+  </div>
 </div>
 
 <!-- STATS -->
@@ -667,7 +671,7 @@ html, body {
   <div class="leg"><div class="leg-dot" style="background:#3a6b8a"></div>Work</div>
   <div class="leg"><div class="leg-dot" style="background:#3dba7e"></div>Family</div>
   <div class="leg"><div class="leg-dot" style="background:#b464dc"></div>Solo</div>
-  <div class="leg"><div class="leg-dot" style="background:rgba(255,255,255,0.25);border:1px dashed rgba(255,255,255,0.4);box-sizing:border-box;border-radius:50%"></div>Wishlist</div>
+  <div class="leg"><div class="leg-dot" style="background:rgba(180,190,210,0.55);border:1.5px dashed rgba(255,255,255,0.7);box-sizing:border-box;border-radius:50%"></div>Wishlist</div>
 </div>
 
 <!-- ADD / EDIT MODAL -->
@@ -827,7 +831,7 @@ var TM = {
   work:   { color:'#3a7ab8', em:'💼', label:'Work' },
   family: { color:'#3dba7e', em:'🏠', label:'Family' },
   solo:   { color:'#b464dc', em:'🎒', label:'Solo' },
-  wish:   { color:'rgba(255,255,255,0.15)', em:'⭐', label:'Wishlist', dashed:true }
+  wish:   { color:'rgba(180,190,210,0.55)', em:'⭐', label:'Wishlist', dashed:true }
 };
 
 function makeIcon(type) {
@@ -1148,6 +1152,9 @@ function bindUI() {
   document.querySelectorAll('.tbtn').forEach(function(btn){ btn.addEventListener('click', function(){ pickType(this); }); });
   document.getElementById('add-modal').addEventListener('click', function(e){ if(e.target===this) closeM('add-modal'); });
   document.getElementById('sum-modal').addEventListener('click', function(e){ if(e.target===this) closeM('sum-modal'); });
+  document.getElementById('btn-backup').addEventListener('click', openBackup);
+  document.getElementById('backup-close').addEventListener('click', function(){ closeM('backup-modal'); });
+  document.getElementById('backup-modal').addEventListener('click', function(e){ if(e.target===this) closeM('backup-modal'); });
 }
 
 /* ─── UTILS ─── */
@@ -1158,6 +1165,88 @@ function fmtDate(ym) {
 }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function closeM(id) { document.getElementById(id).classList.remove('open'); }
+
+/* ─── BACKUP & RESTORE ─── */
+function openBackup() {
+  document.getElementById('backup-modal').classList.add('open');
+}
+
+function doBackup() {
+  if (!trips.length) { alert('No trips to back up yet!'); return; }
+  var data = JSON.stringify({ version: 1, exported: new Date().toISOString(), trips: trips }, null, 2);
+  var blob = new Blob([data], { type: 'application/json' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url;
+  a.download = 'abil-travels-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  document.getElementById('backup-status').textContent = '✅ Backup downloaded to your Downloads folder!';
+  document.getElementById('backup-status').style.color = 'var(--green)';
+}
+
+function doRestore(inp) {
+  var file = inp.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      var restored = data.trips || data; // handle both formats
+      if (!Array.isArray(restored)) throw new Error('Invalid format');
+      if (!confirm('This will replace all current trips with ' + restored.length + ' trips from the backup. Continue?')) return;
+      trips = restored;
+      saveTrips(trips);
+      renderMarkers();
+      fitMap();
+      closeM('backup-modal');
+      document.getElementById('backup-status').textContent = '';
+      alert('✅ ' + restored.length + ' trips restored successfully!');
+    } catch(err) {
+      alert('❌ Could not read backup file. Make sure it is a valid Abil Travels backup.');
+    }
+  };
+  reader.readAsText(file);
+  inp.value = '';
+}
+
 </script>
+
+<!-- BACKUP MODAL -->
+<div class="modal" id="backup-modal">
+  <div class="sheet">
+    <div class="sh-head">
+      <div class="sh-title">💾 Backup & Restore</div>
+      <button class="sh-close" id="backup-close">✕</button>
+    </div>
+    <div class="sh-body">
+
+      <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;margin-bottom:18px;">
+        <div style="font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Why backup?</div>
+        <div style="font-size:0.82rem;color:var(--muted);line-height:1.6;">Clearing Chrome's cache will erase your trips. Save a backup file to your phone — you can restore it anytime.</div>
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <div style="font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">📤 Backup</div>
+        <button class="btn-gold" onclick="doBackup()" style="margin-top:0;">Download Backup File</button>
+        <div id="backup-status" style="font-size:0.78rem;margin-top:8px;min-height:20px;"></div>
+      </div>
+
+      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:18px;">
+        <div style="font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">📥 Restore from backup</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;line-height:1.5;">Select a previously downloaded backup file to restore your trips.</div>
+        <label style="display:block;width:100%;padding:13px;background:rgba(255,255,255,0.06);border:1.5px dashed rgba(255,255,255,0.2);border-radius:12px;text-align:center;cursor:pointer;font-size:0.88rem;color:var(--muted);">
+          📂 Tap to choose backup file
+          <input type="file" accept=".json" onchange="doRestore(this)" style="display:none;">
+        </label>
+      </div>
+
+      <div style="height:8px"></div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
