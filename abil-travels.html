@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Abil Travels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════ */
+:root {
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --surface2: #1c2333;
+  --glass:    rgba(22,27,34,0.88);
+  --border:   rgba(255,255,255,0.08);
+  --gold:     #d4982a;
+  --gold-lt:  #f0b740;
+  --gold-dim: rgba(212,152,42,0.18);
+  --white:    #f0f4f8;
+  --muted:    rgba(240,244,248,0.45);
+  --muted2:   rgba(240,244,248,0.22);
+  --danger:   #e05c5c;
+  --green:    #3dba7e;
+
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 28px;
+}
+
+/* ═══════════════════════════════════════
+   RESET
+═══════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--white);
+  font-family: 'Outfit', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════════════════════════════
+   MAP
+═══════════════════════════════════════ */
+#map {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: #0d1a2a;
+}
+.leaflet-tile { filter: brightness(0.62) saturate(0.55); }
+.leaflet-container { background: #0d1a2a !important; }
+
+/* Dark overlay over map so frosted glass panels pop */
+#map-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  background: rgba(10, 14, 20, 0.38);
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════
+   TOP BAR
+═══════════════════════════════════════ */
+#topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  background: linear-gradient(to bottom, rgba(10,14,20,0.95) 55%, transparent);
+  pointer-events: none;
+}
+
+#brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+#brand-name {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-align: center;
+}
+#brand-name span { color: var(--gold-lt); }
+#brand-sub {
+  font-size: 0.55rem;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+#top-actions {
+  display: flex;
+  gap: 8px;
+  pointer-events: all;
+}
+
+/* RIGHT SIDE FABs */
+#side-fabs {
+  position: fixed;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.icon-btn {
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--white);
+  font-size: 1.05rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, transform 0.12s;
+}
+.icon-btn:active { transform: scale(0.88); background: rgba(212,152,42,0.2); }
+.icon-btn.primary { background: var(--gold); border-color: var(--gold); color: #0d1117; font-size: 1.55rem; font-weight: 700; }
+.icon-btn.primary:active { background: #b8831e; }
+
+/* ═══════════════════════════════════════
+   STATS STRIP
+═══════════════════════════════════════ */
+#stats {
+  position: fixed;
+  top: 82px;
+  left: 50%; transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  gap: 6px;
+  pointer-events: none;
+}
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.stat-n {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gold-lt);
+}
+
+/* ═══════════════════════════════════════
+   LEGEND
+═══════════════════════════════════════ */
+#legend {
+  position: fixed;
+  bottom: 32px; left: 14px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.leg {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  background: var(--glass);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 4px 9px;
+  border-radius: 8px;
+  letter-spacing: 0.03em;
+}
+.leg-dot {
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════
+   MODAL / SHEET
+═══════════════════════════════════════ */
+.modal {
+  display: none;
+  position: fixed; inset: 0;
+  z-index: 500;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 40px;           /* pushes sheet DOWN from top, not up from bottom */
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.modal.open { display: flex; }
+
+.sheet {
+  background: rgba(8,12,20,0.55);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--r-xl);
+  width: calc(100% - 24px);
+  max-width: 520px;
+  max-height: calc(100dvh - 56px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  animation: sheetIn 0.28s cubic-bezier(0.32,0.72,0,1);
+  backdrop-filter: blur(32px) saturate(1.4);
+  -webkit-backdrop-filter: blur(32px) saturate(1.4);
+  isolation: isolate;
+  will-change: transform;
+}
+@keyframes sheetIn {
+  from { opacity:0; transform: translateY(-24px) scale(0.97); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
+}
+
+.sh-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 14px;
+  background: rgba(6,10,18,0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+}
+.sh-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: -0.01em;
+}
+.sh-close {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.sh-close:active { background: rgba(224,92,92,0.2); color: var(--danger); }
+
+.sh-body { padding: 16px; }
+
+/* ═══════════════════════════════════════
+   FORM ELEMENTS
+═══════════════════════════════════════ */
+.fg { margin-bottom: 14px; }
+.fg > label {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 7px;
+}
+
+.fg input[type=text],
+.fg input[type=month],
+.fg textarea,
+.fg select {
+  width: 100%;
+  padding: 11px 13px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--white);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.fg input:focus,
+.fg textarea:focus { border-color: var(--gold); background: rgba(28,35,51,0.9); }
+.fg textarea { resize: none; height: 78px; }
+.fg input::placeholder, .fg textarea::placeholder { color: var(--muted2); }
+
+/* Safari date fix — use text inputs for month/year */
+.date-row { display: flex; gap: 8px; }
+.date-row .fg { flex: 1; margin-bottom: 0; }
+.date-row select {
+  width: 100%;
+  padding: 11px 10px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--white);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+  cursor: pointer;
+}
+.date-row select option { background: #1c2333; color: #f0f4f8; }
+
+/* TYPE SELECTOR */
+.type-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.tbtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px 8px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s;
+}
+.tbtn .e { font-size: 1.1rem; }
+.tbtn.on {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  color: var(--gold-lt);
+  font-weight: 600;
+}
+.tbtn.on.wt { background: rgba(61,186,126,0.12); border-color: var(--green); color: #6de0a8; }
+
+/* LOCATION */
+.loc-wrap { position: relative; }
+.loc-check {
+  position: absolute;
+  right: 11px; top: 50%; transform: translateY(-50%);
+  font-size: 0.9rem;
+  display: none;
+}
+#loc-results {
+  display: none;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--r-sm) var(--r-sm);
+  max-height: 160px;
+  overflow-y: auto;
+}
+.loc-item {
+  padding: 9px 13px;
+  font-size: 0.8rem;
+  color: var(--white);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.loc-item:active { background: var(--gold-dim); }
+.loc-item:last-child { border-bottom: none; }
+.loc-item small { color: var(--muted); font-size: 0.7rem; }
+
+.loc-hint {
+  font-size: 0.68rem;
+  color: var(--muted2);
+  margin-top: 5px;
+  padding-left: 2px;
+  transition: color 0.2s;
+}
+.loc-hint.ok { color: var(--green); }
+.loc-hint.err { color: var(--danger); }
+
+/* PHOTOS */
+.prow { display: flex; gap: 7px; flex-wrap: wrap; }
+.pimg {
+  width: 62px; height: 62px;
+  border-radius: var(--r-sm);
+  object-fit: cover;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  opacity: 0.9;
+}
+.pimg:active { opacity: 0.6; }
+.padd {
+  width: 62px; height: 62px;
+  border-radius: var(--r-sm);
+  border: 1px dashed rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.07);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--muted2);
+  -webkit-tap-highlight-color: transparent;
+}
+.padd:active { background: var(--gold-dim); }
+#ph-file { display: none; }
+
+/* BUTTONS */
+.btn-gold {
+  width: 100%;
+  padding: 14px;
+  background: var(--gold);
+  color: #0d1117;
+  border: none;
+  border-radius: var(--r-md);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  margin-top: 6px;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn-gold:active { background: #b8831e; transform: scale(0.98); }
+
+.btn-ghost-danger {
+  width: 100%;
+  padding: 11px;
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid rgba(224,92,92,0.25);
+  border-radius: var(--r-md);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  cursor: pointer;
+  margin-top: 8px;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-ghost-danger:active { background: rgba(224,92,92,0.1); }
+
+/* ═══════════════════════════════════════
+   POPUP CARD
+═══════════════════════════════════════ */
+.leaflet-popup-content-wrapper {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-md) !important;
+  padding: 0 !important;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+  font-family: 'DM Sans', sans-serif !important;
+  color: var(--white) !important;
+}
+.leaflet-popup-content { margin: 0 !important; width: auto !important; }
+.leaflet-popup-tip-container, .leaflet-popup-close-button { display: none !important; }
+
+.card { width: 220px; }
+.card-photos { display: flex; gap: 2px; }
+.card-photos img { flex:1; height: 90px; object-fit: cover; }
+.card-body { padding: 11px 12px 12px; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.b-road   { background: rgba(212,152,42,0.18);  color: var(--gold-lt); }
+.b-work   { background: rgba(58,107,138,0.25);  color: #7db8dc; }
+.b-family { background: rgba(61,186,126,0.18);  color: #6de0a8; }
+.b-solo   { background: rgba(180,100,220,0.18); color: #c47fe8; }
+.b-wish   { background: rgba(240,183,64,0.12);  color: #f0b740; }
+
+.card-place {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 2px;
+  letter-spacing: -0.01em;
+}
+.card-date { font-size: 0.65rem; color: var(--muted); margin-bottom: 5px; }
+.card-notes { font-size: 0.72rem; color: rgba(240,244,248,0.65); line-height: 1.5; }
+.card-btns { display: flex; gap: 5px; margin-top: 10px; }
+.card-btn {
+  flex:1; padding: 7px;
+  border-radius: 8px; border: none;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.7rem; font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cb-edit { background: var(--surface2); color: var(--white); border: 1px solid var(--border); }
+.cb-del  { background: rgba(224,92,92,0.15); color: var(--danger); }
+
+/* ═══════════════════════════════════════
+   SUMMARY
+═══════════════════════════════════════ */
+.sum-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.sum-card {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 14px 12px;
+  text-align: center;
+}
+.sum-n {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--gold-lt);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.sum-l {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.sec-lbl {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted2);
+  margin: 14px 0 8px;
+}
+.yr-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 0.75rem; }
+.yr-l { width: 32px; color: var(--muted); flex-shrink: 0; }
+.yr-bg { flex:1; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; height: 7px; overflow: hidden; }
+.yr-b { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-lt)); border-radius: 4px; }
+.yr-n { width: 18px; text-align: right; color: var(--white); font-weight: 600; }
+.chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.chip { padding: 4px 9px; border-radius: 16px; font-size: 0.65rem; font-weight: 600; }
+.wi-item { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); }
+.empty-s { text-align: center; padding: 32px 16px; color: var(--muted2); }
+.empty-s .emo { font-size: 2.5rem; margin-bottom: 10px; }
+.empty-s p { font-size: 0.82rem; line-height: 1.7; }
+
+/* ═══════════════════════════════════════
+   MAP ERROR
+═══════════════════════════════════════ */
+#map-err {
+  display: none;
+  position: fixed; inset: 0; z-index: 50;
+  background: var(--bg);
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; padding: 32px;
+}
+#map-err .emo { font-size: 3rem; margin-bottom: 14px; }
+#map-err p { font-size: 0.88rem; color: var(--muted); line-height: 1.7; }
+
+/* Map label font size */
+.leaflet-container .leaflet-control-attribution { font-size: 0.65rem; }
+.leaflet-tooltip { font-size: 0.9rem !important; font-family: 'Outfit', sans-serif !important; }
+
+/* Leaflet zoom override */
+.leaflet-control-zoom a {
+  background: var(--glass) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--white) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.leaflet-control-zoom { border: none !important; }
+
+/* FAB with label */
+.fab-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.fab-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(240,244,248,0.7);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  white-space: nowrap;
+}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+<div id="map-overlay"></div>
+<div id="map-err">
+  <div class="emo">🗺️</div>
+  <p><strong style="color:var(--white)">Map needs internet to load</strong><br>Connect to WiFi or mobile data,<br>then reload.</p>
+</div>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div id="brand">
+    <div id="brand-name"><span>Abil</span> Travels</div>
+    <div id="brand-sub">Every road, every memory</div>
+  </div>
+  <div id="top-actions"></div>
+</div>
+
+<!-- SIDE FABS -->
+<div id="side-fabs">
+  <div class="fab-wrap">
+    <button class="icon-btn primary" id="btn-add" title="Add Trip">＋</button>
+    <span class="fab-label">Add Trip</span>
+  </div>
+  <div class="fab-wrap">
+    <button class="icon-btn" id="btn-sum" title="Summary">📊</button>
+    <span class="fab-label">Summary</span>
+  </div>
+</div>
+
+<!-- STATS -->
+<div id="stats">
+  <div class="stat"><span class="stat-n" id="s-pl">0</span> places</div>
+  <div class="stat"><span class="stat-n" id="s-co">0</span> countries</div>
+  <div class="stat">⭐ <span class="stat-n" id="s-wi">0</span></div>
+</div>
+
+<!-- LEGEND -->
+<div id="legend">
+  <div class="leg"><div class="leg-dot" style="background:#d4982a"></div>Friends</div>
+  <div class="leg"><div class="leg-dot" style="background:#3a6b8a"></div>Work</div>
+  <div class="leg"><div class="leg-dot" style="background:#3dba7e"></div>Family</div>
+  <div class="leg"><div class="leg-dot" style="background:#b464dc"></div>Solo</div>
+  <div class="leg"><div class="leg-dot" style="background:rgba(255,255,255,0.25);border:1px dashed rgba(255,255,255,0.4);box-sizing:border-box;border-radius:50%"></div>Wishlist</div>
+</div>
+
+<!-- ADD / EDIT MODAL -->
+<div class="modal" id="add-modal">
+  <div class="sheet">
+    <div class="sh-head">
+      <div class="sh-title" id="add-title">Add a Trip</div>
+      <button class="sh-close" id="add-close">✕</button>
+    </div>
+    <div class="sh-body">
+
+      <div class="fg">
+        <label>Trip Type</label>
+        <div class="type-grid">
+          <button class="tbtn on" data-t="friends"><span class="e">👫</span>Friends</button>
+          <button class="tbtn"    data-t="work">  <span class="e">💼</span>Work</button>
+          <button class="tbtn"    data-t="family"><span class="e">🏠</span>Family</button>
+          <button class="tbtn"    data-t="solo">  <span class="e">🎒</span>Solo</button>
+          <button class="tbtn wt" data-t="wish">  <span class="e">⭐</span>Wishlist</button>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>Destination</label>
+        <div class="loc-wrap">
+          <input type="text" id="loc-input" placeholder="Search city or place…" autocomplete="off" autocorrect="off" spellcheck="false">
+          <div class="loc-check" id="loc-check">✅</div>
+        </div>
+        <input type="hidden" id="loc-lat">
+        <input type="hidden" id="loc-lng">
+        <input type="hidden" id="loc-cty">
+        <div id="loc-results"></div>
+        <div class="loc-hint" id="loc-hint">Type and tap a result to place a pin on the map</div>
+      </div>
+
+      <div class="fg" id="fg-date">
+        <label>When</label>
+        <div class="date-row">
+          <div class="fg">
+            <select id="sel-month">
+              <option value="">Month</option>
+              <option value="01">January</option><option value="02">February</option>
+              <option value="03">March</option><option value="04">April</option>
+              <option value="05">May</option><option value="06">June</option>
+              <option value="07">July</option><option value="08">August</option>
+              <option value="09">September</option><option value="10">October</option>
+              <option value="11">November</option><option value="12">December</option>
+            </select>
+          </div>
+          <div class="fg">
+            <select id="sel-year"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>Notes</label>
+        <textarea id="trip-notes" placeholder="A memory, highlight, or feeling…"></textarea>
+      </div>
+
+      <div class="fg" id="fg-photos">
+        <label>Photos — tap to remove</label>
+        <div class="prow" id="prow">
+          <div class="padd" id="ph-add-btn">📷</div>
+        </div>
+        <input type="file" id="ph-file" accept="image/*" multiple>
+      </div>
+
+      <button class="btn-gold" id="btn-save">Save Trip ✈️</button>
+      <button class="btn-ghost-danger" id="btn-remove" style="display:none">Remove this trip</button>
+      <div style="height:8px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY MODAL -->
+<div class="modal" id="sum-modal">
+  <div class="sheet">
+    <div class="sh-head">
+      <div class="sh-title">Travel Story</div>
+      <button class="sh-close" id="sum-close">✕</button>
+    </div>
+    <div class="sh-body" id="sum-body"></div>
+  </div>
+</div>
+
+<script>
+/* ─── YEAR DROPDOWN ─── */
+(function() {
+  var sel = document.getElementById('sel-year');
+  var opt0 = document.createElement('option');
+  opt0.value = ''; opt0.textContent = 'Year'; sel.appendChild(opt0);
+  var now = new Date().getFullYear();
+  for (var y = 1986; y <= 2100; y++) {
+    var o = document.createElement('option');
+    o.value = String(y); o.textContent = y; sel.appendChild(o);
+  }
+})();
+
+/* ─── LOAD LEAFLET ─── */
+(function() {
+  var css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css';
+  document.head.appendChild(css);
+
+  var js = document.createElement('script');
+  js.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js';
+  js.onload = bootApp;
+  js.onerror = function() {
+    var js2 = document.createElement('script');
+    js2.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.min.js';
+    js2.onload = bootApp;
+    js2.onerror = function() { document.getElementById('map-err').style.display = 'flex'; };
+    document.head.appendChild(js2);
+  };
+  document.head.appendChild(js);
+})();
+
+/* ─── DATA ─── */
+var SK = 'abil_v6';
+function loadTrips() { try { return JSON.parse(localStorage.getItem(SK)) || []; } catch(e) { return []; } }
+function saveTrips(t) { try { localStorage.setItem(SK, JSON.stringify(t)); } catch(e) {} }
+
+var trips = loadTrips();
+var editId = null, pendingPhotos = [], selType = 'friends', locPicked = false, locTimer = null;
+var map, markers = {};
+
+/* ─── BOOT ─── */
+function bootApp() {
+  if (typeof L === 'undefined') { document.getElementById('map-err').style.display = 'flex'; return; }
+
+  map = L.map('map', { center: [22, 82], zoom: 4, zoomControl: false, attributionControl: true });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18, subdomains: ['a','b','c'], attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+  renderMarkers();
+  fitMap();
+  bindUI();
+  // Refresh popup content each time it opens (ensures edited photos show)
+  map.on('popupopen', function(e) {
+    var popup = e.popup;
+    var latlng = popup.getLatLng();
+    var trip = trips.find(function(t) {
+      return Math.abs(t.lat - latlng.lat) < 0.0001 && Math.abs(t.lng - latlng.lng) < 0.0001;
+    });
+    if (trip) popup.setContent(buildCard(trip));
+  });
+}
+
+/* ─── MARKERS ─── */
+var TM = {
+  friends: { color:'#d4982a', em:'👫', label:'Friends' },
+  work:   { color:'#3a7ab8', em:'💼', label:'Work Trip' },
+  family: { color:'#3dba7e', em:'🏠', label:'Family & Friends' },
+  solo:   { color:'#b464dc', em:'🎒', label:'Solo' },
+  wish:   { color:'rgba(255,255,255,0.15)', em:'⭐', label:'Wishlist', dashed:true }
+};
+
+function makeIcon(type) {
+  var t = TM[type] || TM.friends;
+  var border = t.dashed ? '2px dashed rgba(255,255,255,0.4)' : '2px solid rgba(255,255,255,0.25)';
+  var html = '<div style="width:36px;height:36px;border-radius:50%;background:' + t.color +
+    ';border:' + border + ';display:flex;align-items:center;justify-content:center;' +
+    'font-size:15px;box-shadow:0 2px 14px rgba(0,0,0,0.6);">' + t.em + '</div>';
+  return L.divIcon({ className:'', html:html, iconSize:[36,36], iconAnchor:[18,18], popupAnchor:[0,-22] });
+}
+
+function renderMarkers() {
+  Object.values(markers).forEach(function(m){ if(map) map.removeLayer(m); });
+  markers = {};
+  trips.forEach(function(t) {
+    var m = L.marker([t.lat, t.lng], { icon: makeIcon(t.type) });
+    m.bindPopup(buildCard(t), { maxWidth: 240, minWidth: 220, closeButton: false });
+    m.addTo(map);
+    markers[t.id] = m;
+  });
+  updateStats();
+}
+
+function buildCard(t) {
+  var meta = TM[t.type] || TM.friends;
+  var date = t.date ? fmtDate(t.date) : '';
+  var ph = '';
+  if (t.photos && t.photos.length)
+    ph = '<div class="card-photos">' + t.photos.slice(0,3).map(function(p){ return '<img src="'+p+'" loading="lazy">'; }).join('') + '</div>';
+  return '<div class="card">' + ph +
+    '<div class="card-body">' +
+    '<span class="badge b-'+t.type+'">' + meta.em + ' ' + meta.label + '</span>' +
+    '<div class="card-place">' + esc(t.place) + '</div>' +
+    (date ? '<div class="card-date">📅 ' + date + '</div>' : '') +
+    (t.notes ? '<div class="card-notes">' + esc(t.notes) + '</div>' : '') +
+    '<div class="card-btns">' +
+    '<button class="card-btn cb-edit" onclick="onEdit(\'' + t.id + '\')">✏️ Edit</button>' +
+    '<button class="card-btn cb-del"  onclick="onDel(\'' + t.id + '\')">🗑 Remove</button>' +
+    '</div></div></div>';
+}
+
+function fitMap() {
+  var vis = trips.filter(function(t){ return t.type!=='wish'; });
+  if (!vis.length || !map) return;
+  if (vis.length === 1) { map.setView([vis[0].lat, vis[0].lng], 7); return; }
+  map.fitBounds(L.latLngBounds(vis.map(function(t){ return [t.lat,t.lng]; })), { padding:[55,55] });
+}
+
+/* ─── STATS ─── */
+function updateStats() {
+  var vis = trips.filter(function(t){ return t.type!=='wish'; });
+  var ctr = {};
+  vis.forEach(function(t){ if(t.country) ctr[t.country]=1; });
+  document.getElementById('s-pl').textContent = vis.length;
+  document.getElementById('s-co').textContent = Object.keys(ctr).length;
+  document.getElementById('s-wi').textContent = trips.filter(function(t){ return t.type==='wish'; }).length;
+}
+
+/* ─── LOCATION SEARCH ─── */
+function locSearch(q) {
+  clearTimeout(locTimer);
+  var box = document.getElementById('loc-results');
+  var hint = document.getElementById('loc-hint');
+  var check = document.getElementById('loc-check');
+  locPicked = false;
+  document.getElementById('loc-lat').value = '';
+  document.getElementById('loc-lng').value = '';
+  document.getElementById('loc-cty').value = '';
+  check.style.display = 'none';
+  hint.className = 'loc-hint';
+  hint.textContent = 'Type and tap a result to place a pin on the map';
+  if (!q || q.length < 2) { box.style.display = 'none'; return; }
+  hint.textContent = 'Searching…';
+  locTimer = setTimeout(function() {
+    fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=6&addressdetails=1')
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        box.innerHTML = '';
+        if (!data || !data.length) {
+          hint.textContent = 'No results — try a different name.';
+          hint.className = 'loc-hint err';
+          box.style.display = 'none';
+          return;
+        }
+        hint.textContent = 'Tap a result below ↓';
+        data.forEach(function(item) {
+          var d = document.createElement('div');
+          d.className = 'loc-item';
+          var parts = item.display_name.split(',');
+          var name = parts[0].trim();
+          var ctry = parts[parts.length-1].trim();
+          d.innerHTML = '<strong>' + esc(name) + '</strong> <small>' + esc(ctry) + '</small>';
+          d.addEventListener('click', function(){ pickLoc(item); });
+          d.addEventListener('touchend', function(e){ e.preventDefault(); pickLoc(item); });
+          box.appendChild(d);
+        });
+        box.style.display = 'block';
+      })
+      .catch(function() {
+        hint.textContent = 'Search failed — check internet connection.';
+        hint.className = 'loc-hint err';
+        box.style.display = 'none';
+      });
+  }, 500);
+}
+
+function pickLoc(item) {
+  var lat = parseFloat(item.lat), lng = parseFloat(item.lon);
+  var parts = item.display_name.split(',');
+  var name = parts[0].trim();
+  var ctry = (item.address||{}).country || parts[parts.length-1].trim();
+  document.getElementById('loc-input').value = name;
+  document.getElementById('loc-lat').value   = lat;
+  document.getElementById('loc-lng').value   = lng;
+  document.getElementById('loc-cty').value   = ctry;
+  document.getElementById('loc-results').style.display = 'none';
+  document.getElementById('loc-check').style.display = 'block';
+  var hint = document.getElementById('loc-hint');
+  hint.textContent = '📍 ' + name + ', ' + ctry;
+  hint.className = 'loc-hint ok';
+  locPicked = true;
+  if (map) map.flyTo([lat, lng], Math.max(map.getZoom(), 7));
+}
+
+/* ─── ADD / EDIT ─── */
+function openAdd(id) {
+  editId = id || null;
+  pendingPhotos = [];
+  var isEdit = !!id;
+  document.getElementById('add-title').textContent   = isEdit ? 'Edit Trip' : 'Add a Trip';
+  document.getElementById('btn-save').textContent    = isEdit ? 'Update Trip ✈️' : 'Save Trip ✈️';
+  document.getElementById('btn-remove').style.display = isEdit ? 'block' : 'none';
+
+  // Reset
+  document.getElementById('loc-input').value  = '';
+  document.getElementById('loc-lat').value    = '';
+  document.getElementById('loc-lng').value    = '';
+  document.getElementById('loc-cty').value    = '';
+  document.getElementById('sel-month').value  = '';
+  document.getElementById('sel-year').value   = '';
+  document.getElementById('trip-notes').value = '';
+  document.getElementById('loc-results').style.display = 'none';
+  document.getElementById('loc-check').style.display   = 'none';
+  var hint = document.getElementById('loc-hint');
+  hint.textContent = 'Type and tap a result to place a pin on the map';
+  hint.className = 'loc-hint';
+  locPicked = false;
+  setType('friends');
+  renderPhotos([]);
+
+  if (isEdit) {
+    var t = trips.find(function(x){ return x.id===id; });
+    if (t) {
+      document.getElementById('loc-input').value  = t.place;
+      document.getElementById('loc-lat').value    = t.lat;
+      document.getElementById('loc-lng').value    = t.lng;
+      document.getElementById('loc-cty').value    = t.country||'';
+      document.getElementById('trip-notes').value = t.notes||'';
+      if (t.date && t.date.length >= 7) {
+        document.getElementById('sel-month').value = t.date.split('-')[1] || '';
+        document.getElementById('sel-year').value  = t.date.split('-')[0] || '';
+      }
+      document.getElementById('loc-check').style.display = 'block';
+      hint.textContent = '📍 ' + t.place + (t.country ? ', '+t.country : '');
+      hint.className = 'loc-hint ok';
+      pendingPhotos = t.photos ? t.photos.slice() : [];
+      renderPhotos(pendingPhotos);
+      setType(t.type||'friends');
+      locPicked = true;
+    }
+  }
+  if (map) map.closePopup();
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function pickType(btn) {
+  document.querySelectorAll('.tbtn').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+  selType = btn.getAttribute('data-t');
+  wishToggle();
+}
+function setType(v) {
+  document.querySelectorAll('.tbtn').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-t')===v); });
+  selType = v;
+  wishToggle();
+}
+function wishToggle() {
+  var w = selType === 'wish';
+  document.getElementById('fg-date').style.display   = w ? 'none' : 'block';
+  document.getElementById('fg-photos').style.display = w ? 'none' : 'block';
+}
+
+function saveTrip() {
+  var place = document.getElementById('loc-input').value.trim();
+  var lat   = parseFloat(document.getElementById('loc-lat').value);
+  var lng   = parseFloat(document.getElementById('loc-lng').value);
+  if (!place) { alert('Please enter a destination.'); return; }
+  if (!locPicked || isNaN(lat) || isNaN(lng)) {
+    alert('Please search for the place and tap a result from the list — that places the pin on the map.'); return;
+  }
+  var mo = document.getElementById('sel-month').value;
+  var yr = document.getElementById('sel-year').value;
+  var dateVal = (mo && yr) ? yr + '-' + mo : '';
+
+  var trip = {
+    id:        editId || String(Date.now()),
+    place: place, lat: lat, lng: lng,
+    country:   document.getElementById('loc-cty').value,
+    type:      selType,
+    date:      selType !== 'wish' ? dateVal : '',
+    notes:     document.getElementById('trip-notes').value.trim(),
+    photos:    selType !== 'wish' ? pendingPhotos.slice() : [],
+    createdAt: editId ? ((trips.find(function(t){ return t.id===editId; })||{}).createdAt||Date.now()) : Date.now()
+  };
+  if (editId) { var i = trips.findIndex(function(t){ return t.id===editId; }); trips[i]=trip; }
+  else trips.push(trip);
+  saveTrips(trips); renderMarkers(); closeM('add-modal');
+  if (map) {
+    map.flyTo([lat,lng], Math.max(map.getZoom(),7));
+    setTimeout(function(){ if(markers[trip.id]) markers[trip.id].openPopup(); }, 900);
+  }
+}
+
+function removeTrip() {
+  if (!editId || !confirm('Remove this trip?')) return;
+  trips = trips.filter(function(t){ return t.id!==editId; });
+  saveTrips(trips); renderMarkers(); closeM('add-modal');
+}
+
+function onEdit(id) { if(map) map.closePopup(); setTimeout(function(){ openAdd(id); }, 180); }
+function onDel(id) {
+  if (!confirm('Remove this trip?')) return;
+  trips = trips.filter(function(t){ return t.id!==id; });
+  saveTrips(trips); renderMarkers(); if(map) map.closePopup();
+}
+
+/* ─── PHOTOS ─── */
+function addPhotos(inp) {
+  Array.from(inp.files).forEach(function(f) {
+    var r = new FileReader();
+    r.onload = function(e){ pendingPhotos.push(e.target.result); renderPhotos(pendingPhotos); };
+    r.readAsDataURL(f);
+  });
+  inp.value = '';
+}
+function renderPhotos(arr) {
+  var row = document.getElementById('prow');
+  row.innerHTML = '';
+  arr.forEach(function(src,i){
+    var img = document.createElement('img');
+    img.className='pimg'; img.src=src;
+    img.addEventListener('click', function(){ pendingPhotos.splice(i,1); renderPhotos(pendingPhotos); });
+    row.appendChild(img);
+  });
+  if (arr.length < 6) {
+    var a = document.createElement('div');
+    a.className='padd'; a.textContent='📷';
+    a.addEventListener('click', function(){ document.getElementById('ph-file').click(); });
+    row.appendChild(a);
+  }
+}
+
+/* ─── SUMMARY ─── */
+function openSummary() {
+  var body = document.getElementById('sum-body');
+  var vis  = trips.filter(function(t){ return t.type!=='wish'; });
+  var wsh  = trips.filter(function(t){ return t.type==='wish'; });
+  var ctr  = {};
+  vis.forEach(function(t){ if(t.country) ctr[t.country]=1; });
+  if (!vis.length && !wsh.length) {
+    body.innerHTML = '<div class="empty-s"><div class="emo">🗺️</div><p>No trips yet!<br>Tap <strong style="color:var(--gold-lt)">+</strong> to log your first adventure.</p></div>';
+    document.getElementById('sum-modal').classList.add('open'); return;
+  }
+  var byY = {};
+  vis.forEach(function(t){ if(t.date){ var y=t.date.split('-')[0]; byY[y]=(byY[y]||0)+1; } });
+  var yrs = Object.keys(byY).sort();
+  var maxY = Math.max.apply(null, [1].concat(Object.keys(byY).map(function(k){ return byY[k]; })));
+  var tc = {friends:0,work:0,family:0,solo:0};
+  vis.forEach(function(t){ if(tc[t.type]!==undefined) tc[t.type]++; });
+  var tst = {friends:'background:rgba(212,152,42,0.2);color:#f0b740',work:'background:rgba(58,122,184,0.2);color:#7db8dc',family:'background:rgba(61,186,126,0.2);color:#6de0a8',solo:'background:rgba(180,100,220,0.2);color:#c47fe8'};
+  var tl  = {friends:'👫 Friends',work:'💼 Work',family:'🏠 Family',solo:'🎒 Solo'};
+  var html = '<div class="sum-grid">'
+    + '<div class="sum-card"><div class="sum-n">'+vis.length+'</div><div class="sum-l">Places</div></div>'
+    + '<div class="sum-card"><div class="sum-n">'+Object.keys(ctr).length+'</div><div class="sum-l">Countries</div></div>'
+    + '<div class="sum-card"><div class="sum-n">'+wsh.length+'</div><div class="sum-l">Wishlist</div></div>'
+    + '<div class="sum-card"><div class="sum-n">'+(yrs.length||'–')+'</div><div class="sum-l">Years</div></div>'
+    + '</div>';
+  if (yrs.length) {
+    html += '<div class="sec-lbl">Trips per year</div>';
+    yrs.forEach(function(y){ html += '<div class="yr-row"><div class="yr-l">'+y+'</div><div class="yr-bg"><div class="yr-b" style="width:'+Math.round(byY[y]/maxY*100)+'%"></div></div><div class="yr-n">'+byY[y]+'</div></div>'; });
+  }
+  var anyT = Object.keys(tc).some(function(k){ return tc[k]>0; });
+  if (anyT) {
+    html += '<div class="sec-lbl">Trip types</div><div class="chips">';
+    Object.keys(tc).forEach(function(k){ if(tc[k]>0) html+='<span class="chip" style="'+tst[k]+'">'+tl[k]+': '+tc[k]+'</span>'; });
+    html += '</div>';
+  }
+  if (wsh.length) {
+    html += '<div class="sec-lbl">⭐ Wishlist</div>';
+    wsh.forEach(function(w){ html+='<div class="wi-item">📍 '+esc(w.place)+'</div>'; });
+  }
+  html += '<div style="height:8px"></div>';
+  body.innerHTML = html;
+  document.getElementById('sum-modal').classList.add('open');
+}
+
+/* ─── UI BINDING ─── */
+function bindUI() {
+  document.getElementById('btn-add').addEventListener('click', function(){ openAdd(null); });
+  document.getElementById('btn-sum').addEventListener('click', openSummary);
+  document.getElementById('add-close').addEventListener('click', function(){ closeM('add-modal'); });
+  document.getElementById('sum-close').addEventListener('click', function(){ closeM('sum-modal'); });
+  document.getElementById('btn-save').addEventListener('click', saveTrip);
+  document.getElementById('btn-remove').addEventListener('click', removeTrip);
+  document.getElementById('ph-add-btn').addEventListener('click', function(){ document.getElementById('ph-file').click(); });
+  document.getElementById('ph-file').addEventListener('change', function(){ addPhotos(this); });
+  document.getElementById('loc-input').addEventListener('input', function(){ locSearch(this.value); });
+  document.querySelectorAll('.tbtn').forEach(function(btn){ btn.addEventListener('click', function(){ pickType(this); }); });
+  document.getElementById('add-modal').addEventListener('click', function(e){ if(e.target===this) closeM('add-modal'); });
+  document.getElementById('sum-modal').addEventListener('click', function(e){ if(e.target===this) closeM('sum-modal'); });
+}
+
+/* ─── UTILS ─── */
+function fmtDate(ym) {
+  if (!ym || ym.length < 7) return '';
+  var p = ym.split('-');
+  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(p[1])-1] + ' ' + p[0];
+}
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function closeM(id) { document.getElementById(id).classList.remove('open'); }
+</script>
+</body>
+</html>
